@@ -12,13 +12,20 @@ from thumos_features import *
 
 
 if __name__ == "__main__":
+
     args = parse_args()
+
     if args.debug:
         pdb.set_trace()
 
+    # args.model_path="./models/UM_01"
+    # args.output_path="./outputs/UM_01"
+    # args.log_path="./logs/UM_01"
+    # args.seed=0
+
     config = Config(args)
     worker_init_fn = None
-   
+
     if config.seed >= 0:
         utils.set_seed(config.seed)
         worker_init_fn = np.random.seed(config.seed)
@@ -47,9 +54,9 @@ if __name__ == "__main__":
             worker_init_fn=worker_init_fn)
 
     test_info = {"step": [], "test_acc": [], "average_mAP": [],
-                "mAP@0.1": [], "mAP@0.2": [], "mAP@0.3": [], 
+                "mAP@0.1": [], "mAP@0.2": [], "mAP@0.3": [],
                 "mAP@0.4": [], "mAP@0.5": [], "mAP@0.6": [], "mAP@0.7": []}
-    
+
     best_mAP = -1
 
     criterion = UM_loss(config.alpha, config.beta, config.margin)
@@ -72,14 +79,15 @@ if __name__ == "__main__":
             loader_iter = iter(train_loader)
 
         train(net, loader_iter, optimizer, criterion, logger, step)
-            
-        test(net, config, logger, test_loader, test_info, step)
 
-        if test_info["average_mAP"][-1] > best_mAP:
-            best_mAP = test_info["average_mAP"][-1]
+        if step % 100 == 0:
+            test(net, config, logger, test_loader, test_info, step)
 
-            utils.save_best_record_thumos(test_info, 
-                os.path.join(config.output_path, "best_record_seed_{}.txt".format(config.seed)))
+            if test_info["average_mAP"][-1] > best_mAP:
+                best_mAP = test_info["average_mAP"][-1]
 
-            torch.save(net.state_dict(), os.path.join(args.model_path, \
-                "model_seed_{}.pkl".format(config.seed)))
+                utils.save_best_record_thumos(test_info,
+                    os.path.join(config.output_path, "best_record_seed_{}.txt".format(config.seed)))
+
+                torch.save(net.state_dict(), os.path.join(args.model_path, \
+                    "model_seed_{}.pkl".format(config.seed)))

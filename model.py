@@ -48,6 +48,7 @@ class Model(nn.Module):
 
 
     def forward(self, x):
+        # x: (B, T, F)
         num_segments = x.shape[1]
         k_act = num_segments // self.r_act
         k_bkg = num_segments // self.r_bkg
@@ -55,7 +56,7 @@ class Model(nn.Module):
         cas, features = self.cas_module(x)
 
         feat_magnitudes = torch.norm(features, p=2, dim=2)
-        
+
         select_idx = torch.ones_like(feat_magnitudes).cuda()
         select_idx = self.drop_out(select_idx)
 
@@ -72,7 +73,7 @@ class Model(nn.Module):
         idx_bkg = sorted_idx[:, :k_bkg]
         idx_bkg_feat = idx_bkg.unsqueeze(2).expand([-1, -1, features.shape[2]])
         idx_bkg_cas = idx_bkg.unsqueeze(2).expand([-1, -1, cas.shape[2]])
-        
+
         feat_act = torch.gather(features, 1, idx_act_feat)
         feat_bkg = torch.gather(features, 1, idx_bkg_feat)
 
@@ -86,6 +87,6 @@ class Model(nn.Module):
 
         cas_softmax = self.softmax_2(cas)
 
-        
+
         return score_act, score_bkg, feat_act, feat_bkg, features, cas_softmax
 
